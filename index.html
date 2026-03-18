@@ -673,7 +673,7 @@ function renderTable(){
     if(dFilter==='paid') return d.status==='paid';
     if(dFilter==='unpaid') return d.status==='posted';
     return true;
-  }).sort((a,b)=>new Date(b.postDate||0)-new Date(a.postDate||0));
+  }).sort((a,b)=>new Date(b.outreachDate||b.postDate||0)-new Date(a.outreachDate||a.postDate||0));
   const tb=document.getElementById('dealsBody');
   if(!f.length){
     tb.innerHTML=`<tr><td colspan="7"><div class="empty">${SCRIPT_URL?'No deals found':'Add your Script URL to load deals'}</div></td></tr>`;
