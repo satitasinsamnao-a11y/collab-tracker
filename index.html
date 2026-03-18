@@ -548,14 +548,28 @@ function loadDeals(){
   showToast('Loading deals…','info');
   apiCall({action:'getDeals'}).then(res=>{
     if(res.success){
-      allDeals=res.deals.map(d=>({
-        ...d,
-        platform: typeof d.platforms==='string'&&d.platforms ? d.platforms.split(',') : [],
-        rate: parseFloat(d.rate)||0,
-      }));
+      allDeals=res.deals.map(d=>{
+        // Convert any date fields to YYYY-MM-DD string format for date inputs
+        const dateFields=['outreachDate','draftDeadline','dueDate','postDate','paymentExpected','usageExpiry'];
+        dateFields.forEach(f=>{
+          if(d[f]){
+            const dt=new Date(d[f]);
+            if(!isNaN(dt)) d[f]=dt.toISOString().split('T')[0];
+            else d[f]='';
+          }
+        });
+        return {
+          ...d,
+          platform: typeof d.platforms==='string'&&d.platforms ? d.platforms.split(',') : [],
+          rate: parseFloat(d.rate)||0,
+        };
+      });
       renderTable();
       renderDashboardCards();
       renderDeadlines();
+      refreshYearSelects();
+      // re-render analysis if on that page
+      if(document.getElementById('page-analysis').classList.contains('active')) renderAnalysis();
       showToast('Deals loaded ✓','ok');
     }
   }).catch(()=>showToast('Could not load deals','err'));
@@ -614,7 +628,7 @@ function showPage(id, topBtn, bnBtn){
   const bn=document.getElementById('bn-'+id);
   if(bn) bn.classList.add('active');
   if(bnBtn) bnBtn.classList.add('active');
-  if(id==='analysis') renderAnalysis();
+  if(id==='analysis'){ refreshYearSelects(); renderAnalysis(); }
   if(id==='dashboard'){ renderTable(); renderDashboardCards(); }
   if(id==='form' && !editingId) resetForm();
 }
@@ -624,7 +638,10 @@ function goNewDeal(){ editingId=null; resetForm(); showPage('form',null,null); }
 // ── DASHBOARD CARDS ──────────────────────────────────────────
 function renderDashboardCards(){
   const yr=new Date().getFullYear();
-  const thisYear=allDeals.filter(d=>d.postDate&&new Date(d.postDate).getFullYear()===yr);
+  const thisYear=allDeals.filter(d=>{
+    const dateStr=d.postDate||d.outreachDate||d.draftDeadline||d.dueDate;
+    return dateStr&&new Date(dateStr).getFullYear()===yr;
+  });
   const total=thisYear.length;
   const revenue=thisYear.filter(d=>d.status==='paid').reduce((s,d)=>s+(parseFloat(d.rate)||0),0);
   const unpaid=allDeals.filter(d=>d.status==='posted').reduce((s,d)=>s+(parseFloat(d.rate)||0),0);
@@ -918,8 +935,9 @@ function renderAnalysis(){
   const monthlyDeals=new Array(12).fill(0);
 
   allDeals.forEach(d=>{
-    if(!d.postDate) return;
-    const dt=new Date(d.postDate);
+    const dateStr=d.postDate||d.outreachDate||d.draftDeadline||d.dueDate;
+    if(!dateStr) return;
+    const dt=new Date(dateStr);
     if(targetYear&&dt.getFullYear()!==targetYear) return;
     const m=dt.getMonth();
     if(d.status==='paid') monthlyRev[m]+=(parseFloat(d.rate)||0);
@@ -952,10 +970,11 @@ function renderMetrics(tR,tD,period){
   const yr=document.getElementById('aYearSel').value;
   const monthlyRev=new Array(12).fill(0);
   allDeals.forEach(d=>{
-    if(!d.postDate||d.status!=='paid') return;
-    const dt=new Date(d.postDate);
+    const dateStr=d.postDate||d.outreachDate||d.draftDeadline||d.dueDate;
+    if(!dateStr) return;
+    const dt=new Date(dateStr);
     if(yr!=='all'&&dt.getFullYear()!==parseInt(yr)) return;
-    monthlyRev[dt.getMonth()]+=(parseFloat(d.rate)||0);
+    if(d.status==='paid') monthlyRev[dt.getMonth()]+=(parseFloat(d.rate)||0);
   });
   const bi=monthlyRev.indexOf(Math.max(...monthlyRev));
   document.getElementById('aMetrics').innerHTML=`
