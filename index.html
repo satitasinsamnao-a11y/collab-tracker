@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Collab Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F0;
+  --surface:#FFFFFF;
+  --border:#E8E4DC;
+  --border-strong:#D0CAC0;
+  --text:#1A1916;
+  --text-secondary:#6B6760;
+  --text-tertiary:#A8A49E;
+  --radius:12px;
+  --radius-sm:8px;
+  --radius-pill:999px;
+  --font:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* APP SHELL */
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:1100px;margin:0 auto}
+.topbar{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;gap:1rem;height:54px}
+.topbar-logo{font-size:15px;font-weight:500;letter-spacing:-.01em;color:var(--text);flex:1}
+.topbar-logo span{color:var(--text-tertiary);font-weight:300}
+.nav-tabs{display:flex;gap:2px;background:var(--border);padding:3px;border-radius:var(--radius-sm);overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{font-size:12px;font-weight:500;padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--text-secondary);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.nav-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+.content{flex:1;padding:1.25rem;padding-bottom:90px;overflow-y:auto}
+.page{display:none;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* BOTTOM NAV (mobile) */
+.bottom-nav{display:block;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:200}
+.bottom-nav-inner{display:flex;justify-content:space-around}
+.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 16px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;font-family:var(--font);transition:color .15s}
+.bnav-btn.active{color:var(--text)}
+.bnav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.bnav-icon svg{width:20px;height:20px;stroke-width:1.5}
+.bnav-label{font-size:10px;font-weight:500}
+
+/* CARDS & SECTIONS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:.875rem;overflow:hidden}
+.card-title{font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.cdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tl-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;width:100%;overflow:hidden}
+.tl-grid .field{min-width:0;overflow:hidden}
+.tl-grid .field input{width:100%;min-width:0;max-width:100%;display:block;-webkit-appearance:none;appearance:none}
+.tl-last{grid-column:auto}
+
+/* FORM FIELDS */
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:500;color:var(--text-secondary);letter-spacing:.02em}
+.field input,.field select,.field textarea{font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg);color:var(--text);width:100%;min-width:0;outline:none;transition:border-color .15s;font-family:var(--font)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--border-strong);background:var(--surface)}
+.field textarea{resize:vertical;min-height:64px;line-height:1.5}
+.field input[type=date]{color-scheme:light}
+.field input[type=date]::-webkit-datetime-edit{color:var(--text-tertiary)}
+.field input[type=date].hv::-webkit-datetime-edit{color:var(--text)}
+.field input[type=date]::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer}
+.rate-wrap{position:relative}
+.rate-wrap input{padding-right:46px}
+.rate-sfx{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:500;color:var(--text-tertiary);pointer-events:none;font-family:var(--mono)}
+
+/* PILLS & BADGES */
+.pill-row{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;padding:5px 14px;border-radius:var(--radius-pill);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .15s;user-select:none;background:transparent;font-family:var(--font)}
+.pill.on{background:#1A1916;color:#F7F5F0;border-color:#1A1916}
+.pill.on-amber{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+
+/* PLATFORM TABS */
+.ptab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.ptab{font-size:12px;padding:5px 14px;border-radius:var(--radius-pill);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);transition:all .15s}
+.ptab.ig.on{background:#FBEAF0;color:#72243E;border-color:#ED93B1}
+.ptab.tt.on{background:#2C2C2A;color:#D3D1C7;border-color:#2C2C2A}
+.ptab.yt.on{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.pblock{display:none}.pblock.show{display:block}
+.psection{padding:10px;border-radius:var(--radius-sm);margin-bottom:8px}
+.psection.ig{border:1px solid #ED93B1;background:#FBEAF0}
+.psection.tt{border:1px solid #3a3a38;background:#2C2C2A}
+.psection.yt{border:1px solid #F09595;background:#FCEBEB}
+.plat-lbl{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+.plat-lbl.ig{color:#72243E}.plat-lbl.tt{color:#B4B2A9}.plat-lbl.yt{color:#791F1F}
+.ctypes{display:flex;gap:6px;flex-wrap:wrap}
+.ctype{font-size:12px;padding:4px 12px;border-radius:var(--radius-pill);border:1px solid;cursor:pointer;user-select:none;font-family:var(--font);transition:all .15s}
+.ctype.ig-t{border-color:#ED93B1;color:#72243E}
+.ctype.ig-t.on{background:#D4537E;color:#FBEAF0;border-color:#D4537E}
+.ctype.tt-t{border-color:#888780;color:#B4B2A9}
+.ctype.tt-t.on{background:#888780;color:#2C2C2A;border-color:#888780}
+.ctype.yt-t{border-color:#F09595;color:#791F1F}
+.ctype.yt-t.on{background:#E24B4A;color:#FCEBEB;border-color:#E24B4A}
+.tt-extra{background:#3a3a38;border:1px solid #5F5E5A;border-radius:var(--radius-sm);padding:.875rem;margin-top:8px}
+.tt-extra-title{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:#B4B2A9;margin-bottom:.75rem}
+.tt-extra .field label{color:#888780}
+.tt-extra .field input{background:#2C2C2A;border-color:#5F5E5A;color:#F1EFE8}
+.tt-extra .field input:focus{border-color:#888780}
+.tt-extra .field input[type=date]{color-scheme:dark}
+.tt-extra .field input[type=date]::-webkit-datetime-edit{color:#5F5E5A}
+.tt-extra .field input[type=date].hv::-webkit-datetime-edit{color:#F1EFE8}
+.tt-extra .field input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.4}
+.tt-extra .rate-sfx{color:#888780}
+
+/* TAG INPUT */
+.tag-box{border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg);min-height:44px;display:flex;flex-wrap:wrap;gap:5px;align-items:flex-start;cursor:text;transition:border-color .15s}
+.tag-box:focus-within{border-color:var(--border-strong);background:var(--surface)}
+.tag{font-size:13px;font-weight:500;padding:3px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-pill);color:var(--text);display:flex;align-items:center;gap:4px}
+.tag-x{cursor:pointer;color:var(--text-tertiary);font-size:10px;line-height:1}
+.tag-input{font-size:11px;border:none;background:transparent;outline:none;min-width:100px;font-family:var(--font);padding:3px 0;color:var(--text-secondary)}
+.tag-input::placeholder{color:var(--text-tertiary);font-size:11px}
+
+/* RIGHTS */
+.rights-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.right-item{display:flex;align-items:flex-start;gap:8px;padding:7px 6px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s}
+.right-item:hover{background:var(--bg)}
+.right-item input[type=checkbox]{accent-color:#1A1916;width:14px;height:14px;cursor:pointer;margin-top:2px;flex-shrink:0}
+.right-lbl{font-size:13px;color:var(--text)}
+.right-sub{font-size:11px;color:var(--text-tertiary);margin-top:1px}
+.cond-fields{margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);display:none}
+.cond-fields.show{display:block}
+
+/* STATUS FLOW */
+.status-flow{display:flex;gap:5px;flex-wrap:wrap}
+.sstep{font-size:12px;padding:5px 14px;border-radius:var(--radius-pill);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .15s;user-select:none;font-family:var(--font)}
+.sstep.ss-declined{border-color:#F09595;color:#791F1F}
+.sstep.ss-negotiating{border-color:#FAC775;color:#854F0B}
+.sstep.ss-agreed{border-color:#85B7EB;color:#185FA5}
+.sstep.ss-created{border-color:#AFA9EC;color:#3C3489}
+.sstep.ss-posted{border-color:#5DCAA5;color:#085041}
+.sstep.ss-paid{border-color:#97C459;color:#27500A}
+.sstep.on.ss-declined{background:#FCEBEB}
+.sstep.on.ss-negotiating{background:#FAEEDA}
+.sstep.on.ss-agreed{background:#E6F1FB}
+.sstep.on.ss-created{background:#EEEDFE}
+.sstep.on.ss-posted{background:#E1F5EE}
+.sstep.on.ss-paid{background:#EAF3DE}
+
+/* BUTTONS */
+.btn-primary{display:block;width:100%;padding:11px;font-size:14px;font-weight:500;font-family:var(--font);border:none;border-radius:var(--radius);background:#1A1916;color:#F7F5F0;cursor:pointer;margin-top:1.25rem;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-dark{font-size:12px;padding:6px 16px;border-radius:var(--radius-pill);border:none;background:#1A1916;color:#F7F5F0;cursor:pointer;font-family:var(--font);font-weight:500;transition:opacity .15s;white-space:nowrap}
+.btn-dark:hover{opacity:.8}
+.btn-toggle{font-size:12px;padding:5px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.btn-toggle.on{background:#EAF0FB;color:#185FA5;border-color:#85B7EB}
+
+/* DASHBOARD */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem}
+.scard-lbl{font-size:11px;color:var(--text-secondary);margin-bottom:5px}
+.scard-val{font-size:21px;font-weight:500;line-height:1}
+.scard-sub{font-size:10px;color:var(--text-tertiary);margin-top:3px}
+.dl-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.dl-row:last-child{border-bottom:none}
+.dl-date{font-size:11px;font-weight:500;color:var(--text-secondary);min-width:60px;font-family:var(--mono)}
+.dl-name{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.dl-type{font-size:11px;color:var(--text-tertiary)}
+.badge{font-size:11px;padding:2px 9px;border-radius:var(--radius-pill);white-space:nowrap;border:1px solid}
+.badge.urgent{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.badge.soon{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.badge.ok{background:#E1F5EE;color:#085041;border-color:#5DCAA5}
+
+/* DEALS TABLE */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filter-bar-row2{display:flex;align-items:center;gap:6px;width:100%;margin-top:2px;justify-content:space-between}
+.fsel{font-size:12px;padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:var(--font);outline:none}
+.fbtn{font-size:12px;padding:4px 12px;border-radius:var(--radius-pill);border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:var(--font);transition:all .15s}
+.fbtn.on{background:var(--surface);color:var(--text);border-color:var(--border-strong);font-weight:500}
+.fdivider{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:11px;font-weight:500;color:var(--text-tertiary);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:10px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg)}
+.spill{font-size:11px;padding:2px 9px;border-radius:var(--radius-pill);border:1px solid;white-space:nowrap;display:inline-block}
+.ppill{font-size:11px;padding:2px 7px;border-radius:var(--radius-pill);white-space:nowrap;display:inline-block;margin-right:2px;border:1px solid}
+.ppill.ig{background:#FBEAF0;color:#72243E;border-color:#ED93B1}
+.ppill.tt{background:#2C2C2A;color:#D3D1C7;border-color:#3a3a38}
+.ppill.yt{background:#FCEBEB;color:#791F1F;border-color:#F09595}
+.empty{text-align:center;padding:2rem;color:var(--text-tertiary);font-size:13px}
+
+/* ANALYSIS */
+.a-filter{display:flex;gap:6px;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap}
+.a-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:.875rem}
+.chart-lbl{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.chart-sub{font-size:11px;color:var(--text-tertiary);margin-bottom:1rem}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:150px;padding-bottom:22px;position:relative}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;position:relative}
+.bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;cursor:default;transition:opacity .15s}
+.bar:hover{opacity:.75}
+.bar-lbl{font-size:9px;color:var(--text-tertiary);position:absolute;bottom:-18px;white-space:nowrap}
+.bar-val{font-size:9px;color:var(--text-secondary);position:absolute;top:-15px;white-space:nowrap}
+.chart-axis{position:absolute;bottom:20px;left:0;right:0;height:1px;background:var(--border)}
+.month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.mcell{background:var(--bg);border-radius:6px;padding:7px 4px;text-align:center}
+.mcell.hi{background:#E6F1FB}
+.mcell-m{font-size:9px;color:var(--text-tertiary);margin-bottom:3px}
+.mcell-v{font-size:11px;font-weight:500;color:var(--text)}
+.mcell-d{font-size:10px;color:var(--text-secondary)}
+.mcell.hi .mcell-m,.mcell.hi .mcell-v,.mcell.hi .mcell-d{color:#185FA5}
+.divider{height:1px;background:var(--border);margin:10px 0}
+
+/* HEADER PILL */
+.hpill{display:inline-flex;align-items:center;font-size:11px;padding:2px 9px;border-radius:var(--radius-pill);margin-left:8px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);transition:all .2s;vertical-align:middle}
+.page-h1{font-size:20px;font-weight:500;margin-bottom:3px}
+.page-sub{font-size:12px;color:var(--text-secondary);margin-bottom:1.25rem}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .topbar .nav-tabs{display:none}
+  .tl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tl-last{grid-column:auto}
+  .timeline-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .timeline-grid .field:last-child{grid-column:span 1}
+  .content{padding:1rem;padding-bottom:90px}
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+  .g5{grid-template-columns:1fr 1fr}
+  .a-metrics{grid-template-columns:1fr 1fr}
+  .rights-grid{grid-template-columns:1fr}
+  .two-col{grid-template-columns:1fr!important}
+  .tbl th:nth-child(3),.tbl td:nth-child(3),
+  .tbl th:nth-child(4),.tbl td:nth-child(4){display:none}
+  .tbl th:nth-child(6),.tbl td:nth-child(6){display:none}
+  .month-grid{grid-template-columns:repeat(4,1fr)!important}
+  .status-flow{gap:4px}
+  .sstep{font-size:11px;padding:4px 10px}
+}
+@media(min-width:641px) and (max-width:900px){
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .g5{grid-template-columns:1fr 1fr}
+  .a-metrics{grid-template-columns:1fr 1fr}
+  .two-col{grid-template-columns:1fr!important}
+}
+
+.tbl-btn{font-size:11px;padding:3px 10px;border-radius:var(--radius-pill);border:1px solid;cursor:pointer;font-family:var(--font);font-weight:500;transition:all .15s;white-space:nowrap}
+.tbl-btn.edit{background:transparent;border-color:var(--border);color:var(--text-secondary)}
+.tbl-btn.edit:hover{border-color:var(--border-strong);color:var(--text)}
+.tbl-btn.del{background:transparent;border-color:#F09595;color:#791F1F}
+.tbl-btn.del:hover{background:#FCEBEB}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.5rem;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--text-secondary);margin-bottom:1.25rem;line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.modal-btn{font-size:13px;padding:7px 18px;border-radius:var(--radius-pill);border:1px solid;cursor:pointer;font-family:var(--font);font-weight:500}
+.modal-btn.cancel{background:transparent;border-color:var(--border);color:var(--text-secondary)}
+.modal-btn.confirm-del{background:#791F1F;border-color:#791F1F;color:#fff}
+.btn-delete-form{display:block;width:100%;padding:11px;font-size:14px;font-weight:500;font-family:var(--font);border:1px solid #F09595;border-radius:var(--radius);background:transparent;color:#791F1F;cursor:pointer;transition:all .15s}
+.btn-delete-form:hover{background:#FCEBEB}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-logo">Collab <span>Tracker</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('dashboard',this)">Dashboard</button>
+      <button class="nav-tab" onclick="showPage('form',this)">New deal</button>
+      <button class="nav-tab" onclick="showPage('analysis',this)">Analysis</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-h1">Dashboard</div>
+      <div class="page-sub">Overview of all your brand collaborations</div>
+
+      <div class="summary-grid">
+        <div class="scard"><div class="scard-lbl">Total deals</div><div class="scard-val" id="sc-total">—</div><div class="scard-sub">this year</div></div>
+        <div class="scard"><div class="scard-lbl">Total revenue</div><div class="scard-val" id="sc-revenue">—</div><div class="scard-sub">THB this year</div></div>
+        <div class="scard"><div class="scard-lbl">Unpaid</div><div class="scard-val" id="sc-unpaid" style="color:#A32D2D">—</div><div class="scard-sub">THB pending</div></div>
+        <div class="scard"><div class="scard-lbl">Active deals</div><div class="scard-val" id="sc-active">—</div><div class="scard-sub">in progress</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-bottom:.875rem" class="two-col">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title"><span class="cdot" style="background:#D85A30"></span>Upcoming deadlines</div>
+          <div id="deadlinesList"><div class="empty" style="padding:1rem 0">No upcoming deadlines</div></div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title"><span class="cdot" style="background:#639922"></span>Recently added</div>
+          <div id="recentDeals">
+            <div class="empty" style="padding:1rem 0">No deals yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filter-bar">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div class="card-title" style="margin-bottom:0;margin-right:2px"><span class="cdot" style="background:#7F77DD"></span>All deals</div>
+            <div class="fdivider"></div>
+            <button class="fbtn on" onclick="setDF('all',this)">All</button>
+            <button class="fbtn" onclick="setDF('active',this)">Active</button>
+            <button class="fbtn" onclick="setDF('paid',this)">Paid</button>
+            <button class="fbtn" onclick="setDF('unpaid',this)">Unpaid</button>
+          </div>
+          <div class="filter-bar-row2">
+            <select class="fsel" id="dYearSel" onchange="renderTable()"></select>
+            <select class="fsel" id="dMonthSel" style="display:none" onchange="renderTable()">
+              <option value="all">All months</option>
+              <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
+              <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
+              <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+              <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
+            </select>
+            <div style="flex:1"></div>
+            <button class="btn-dark" onclick="goNewDeal()">+ New deal</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Brand</th><th>Product</th><th>Platform</th><th>Type</th><th>Rate (THB)</th><th>Post date</th><th>Status</th><th></th></tr></thead>
+            <tbody id="dealsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW DEAL FORM -->
+    <div class="page" id="page-form">
+      <div class="page-h1"><span id="formTitle">New collaboration</span> <span class="hpill" id="hpill">Draft</span></div>
+      <div class="page-sub">Track your deal from first contact to payment</div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#1D9E75"></span>Brand & agency</div>
+        <div class="g2" style="margin-bottom:10px">
+          <div class="field"><label>Brand name</label><input type="text" id="f-brand"></div>
+          <div class="field"><label>Product / collection</label><input type="text" id="f-product"></div>
+        </div>
+        <div class="g2">
+          <div class="field"><label>Agency name</label><input type="text" id="f-agency"></div>
+          <div class="field"><label>Contact person</label><input type="text" id="f-contact"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#BA7517"></span>Deal type</div>
+        <div class="pill-row">
+          <div class="pill on" onclick="this.classList.toggle('on')">Paid collaboration</div>
+          <div class="pill" onclick="this.classList.toggle('on')">PR (gifted)</div>
+          <div class="pill" onclick="this.classList.toggle('on')">Event</div>
+          <div class="pill" onclick="this.classList.toggle('on')">Barter</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#7F77DD"></span>Rate</div>
+        <div class="pill-row" style="margin-bottom:10px">
+          <button class="btn-toggle on" onclick="setRate('fixed',this)">Brand fixed rate</button>
+          <button class="btn-toggle" onclick="setRate('self',this)">I set my rate</button>
+        </div>
+        <div class="g2">
+          <div class="field"><label id="rLbl">Rate</label>
+            <div class="rate-wrap"><input type="number" id="f-rate"><span class="rate-sfx">THB</span></div>
+          </div>
+          <div class="field"><label>Payment term</label><textarea style="min-height:60px" id="f-paymentTerm"></textarea></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#D4537E"></span>Content</div>
+        <div style="font-size:11px;color:var(--text-secondary);font-weight:500;margin-bottom:8px">Platform — select all that apply</div>
+        <div class="ptab-row">
+          <button class="ptab ig" onclick="toggleP('ig',this)">Instagram</button>
+          <button class="ptab tt" onclick="toggleP('tt',this)">TikTok</button>
+          <button class="ptab yt" onclick="toggleP('yt',this)">YouTube</button>
+        </div>
+        <div id="ig-b" class="pblock"><div class="psection ig"><div class="plat-lbl ig">Instagram</div><div class="ctypes"><div class="ctype ig-t" onclick="this.classList.toggle('on')">Post</div><div class="ctype ig-t" onclick="this.classList.toggle('on')">Story</div><div class="ctype ig-t" onclick="this.classList.toggle('on')">Reel</div></div></div></div>
+        <div id="tt-b" class="pblock"><div class="psection tt"><div class="plat-lbl tt">TikTok</div><div class="ctypes"><div class="ctype tt-t" onclick="this.classList.toggle('on')">Video</div><div class="ctype tt-t" onclick="this.classList.toggle('on')">TikTok Live</div></div>
+        <div class="tt-extra"><div class="tt-extra-title">Gencode & commission</div>
+          <div class="g2" style="margin-bottom:8px">
+            <div class="field"><label>Gencode</label><input type="text" id="f-gencode"></div>
+            <div class="field"><label>Gencode rate</label><div class="rate-wrap"><input type="number" id="f-gencodeRate"><span class="rate-sfx">THB</span></div></div>
+          </div>
+          <div class="g2" style="margin-bottom:8px">
+            <div class="field"><label>Commission cart rate</label><div class="rate-wrap"><input type="number" id="f-commRate"><span class="rate-sfx">%</span></div></div>
+            <div class="field"><label>Commission cart link</label><input type="url" id="f-commLink"></div>
+          </div>
+
+        </div></div></div>
+        <div id="yt-b" class="pblock"><div class="psection yt"><div class="plat-lbl yt">YouTube</div><div class="ctypes"><div class="ctype yt-t" onclick="this.classList.toggle('on')">Dedicated video</div><div class="ctype yt-t" onclick="this.classList.toggle('on')">Integration</div><div class="ctype yt-t" onclick="this.classList.toggle('on')">Short</div></div></div></div>
+        <div class="divider"></div>
+        <div class="field"><label>Conditions / deliverables note</label><textarea id="f-deliverables"></textarea></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#378ADD"></span>SOW — scope of work</div>
+        <div class="g2" style="margin-bottom:12px">
+          <div class="field"><label>Required tags</label>
+            <div class="tag-box" id="tagBox" onclick="document.getElementById('tagIn').focus()">
+              <input class="tag-input" id="tagIn" placeholder="mention, press Enter" onkeydown="addTag(event,'tagBox','tagIn','@')">
+            </div>
+          </div>
+          <div class="field"><label>Hashtags</label>
+            <div class="tag-box" id="hashBox" onclick="document.getElementById('hashIn').focus()">
+              <input class="tag-input" id="hashIn" placeholder="hashtag, press Enter" onkeydown="addTag(event,'hashBox','hashIn','#')">
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:6px">Rights & permissions</div>
+        <div class="rights-grid">
+          <label class="right-item"><input type="checkbox" onchange="showCond('cF1',this.checked)"><div><div class="right-lbl">Commercial use allowed</div><div class="right-sub">Brand can use for commercial purposes</div></div></label>
+          <label class="right-item"><input type="checkbox" onchange="showCond('cF2',this.checked)"><div><div class="right-lbl">Repurpose rights</div><div class="right-sub">Brand can repost on their channels</div></div></label>
+          <label class="right-item"><input type="checkbox"><div><div class="right-lbl">Paid ads / whitelisting</div><div class="right-sub">Brand can run as paid advertising</div></div></label>
+          <label class="right-item"><input type="checkbox"><div><div class="right-lbl">Content may be modified</div><div class="right-sub">Brand can crop, edit, or alter</div></div></label>
+          <label class="right-item"><input type="checkbox"><div><div class="right-lbl">Third party usage</div><div class="right-sub">Can share with partner brands</div></div></label>
+          <label class="right-item"><input type="checkbox"><div><div class="right-lbl">Credit required when reposting</div><div class="right-sub">Brand must tag your account</div></div></label>
+          <label class="right-item"><input type="checkbox" onchange="showCond('cF3',this.checked)"><div><div class="right-lbl">Exclusivity required</div><div class="right-sub">No competitor brands</div></div></label>
+          <label class="right-item"><input type="checkbox" onchange="showCond('cF4',this.checked)"><div><div class="right-lbl">Usage rights have expiry</div><div class="right-sub">Rights limited to a period</div></div></label>
+        </div>
+        <div class="cond-fields" id="cF1"><div class="g2"><div class="field"><label>Territory</label><select id="f-territory"><option value=""></option><option>Thailand only</option><option>Southeast Asia</option><option>Asia Pacific</option><option>Worldwide</option><option>Custom</option></select></div><div class="field"><label>Notes</label><input type="text" id="f-rightsNotes"></div></div></div>
+        <div class="cond-fields" id="cF2"><div class="field"><label>Which channels</label><input type="text" id="f-repurchase"></div></div>
+        <div class="cond-fields" id="cF3"><div class="g2"><div class="field"><label>Exclusivity period</label><input type="text" id="f-exclPeriod"></div><div class="field"><label>Competitor category</label><input type="text" id="f-exclCat"></div></div></div>
+        <div class="cond-fields" id="cF4"><div class="g2"><div class="field"><label>Expiry date</label><input type="date" id="f-usageExpiry" onchange="this.classList.toggle('hv',!!this.value)"></div><div class="field"><label>Duration note</label><input type="text" id="f-usageNote"></div></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#D85A30"></span>Brief</div>
+        <div class="field" style="margin-bottom:10px"><label>Brief link</label><input type="url" id="f-briefLink"></div>
+        <div class="field"><label>Brief notes / key messages</label><textarea style="min-height:90px" id="f-briefNotes"></textarea></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#639922"></span>Timeline</div>
+        <div class="tl-grid">
+          <div class="field"><label>Outreach date</label><input type="date" id="f-outreach" onchange="this.classList.toggle('hv',!!this.value)"></div>
+          <div class="field"><label>Draft deadline</label><input type="date" id="f-draft" onchange="this.classList.toggle('hv',!!this.value)"></div>
+          <div class="field"><label>Due date</label><input type="date" id="f-due" onchange="this.classList.toggle('hv',!!this.value)"></div>
+          <div class="field"><label>Post date</label><input type="date" id="f-post" onchange="this.classList.toggle('hv',!!this.value)"></div>
+          <div class="field tl-last"><label>Payment expected</label><input type="date" id="f-payment" onchange="this.classList.toggle('hv',!!this.value)"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="cdot" style="background:#888780"></span>Deal status</div>
+        <div class="status-flow">
+          <div class="sstep ss-declined" onclick="setStatus(this,'#FCEBEB','#791F1F','Declined')">Declined</div>
+          <div class="sstep ss-negotiating on" onclick="setStatus(this,'#FAEEDA','#854F0B','Negotiating')">Negotiating</div>
+          <div class="sstep ss-agreed" onclick="setStatus(this,'#E6F1FB','#185FA5','Agreed')">Agreed</div>
+          <div class="sstep ss-created" onclick="setStatus(this,'#EEEDFE','#3C3489','Content created')">Content created</div>
+          <div class="sstep ss-posted" onclick="setStatus(this,'#E1F5EE','#085041','Posted')">Posted</div>
+          <div class="sstep ss-paid" onclick="setStatus(this,'#EAF3DE','#27500A','Paid')">Paid</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:1.25rem">
+  <button class="btn-primary" style="margin-top:0" onclick="saveDeal()">Save deal</button>
+  <button class="btn-delete-form" id="formDeleteBtn" onclick="deleteFromForm()" style="display:none">Delete this deal</button>
+</div>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div class="page" id="page-analysis">
+      <div class="page-h1">Analysis</div>
+      <div class="page-sub">Revenue & deals overview</div>
+      <div class="a-filter">
+        <select class="fsel" id="aYearSel" onchange="renderAnalysis()"></select>
+        <select class="fsel" id="aMonthSel" style="display:none" onchange="renderAnalysis()">
+          <option value="all">All months</option>
+          <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+          <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+          <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+          <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+        </select>
+      </div>
+      <div class="a-metrics" id="aMetrics"></div>
+      <div class="chart-card" id="revCard"><div class="chart-lbl">Monthly revenue</div><div class="chart-sub" id="revSub"></div><div class="bar-chart" id="revChart"></div></div>
+      <div class="chart-card" id="dealCard"><div class="chart-lbl">Deals per month</div><div class="chart-sub" id="dealSub"></div><div class="bar-chart" id="dealChart"></div></div>
+      <div class="chart-card"><div class="chart-lbl" style="margin-bottom:3px">Monthly breakdown</div><div style="font-size:11px;color:var(--text-tertiary);margin-bottom:10px">Revenue in THB · Deals count</div><div class="month-grid" id="mGrid"></div></div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end app -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bnav-btn active" id="bn-dashboard" onclick="showPage('dashboard',null,this)">
+      <div class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <span class="bnav-label">Dashboard</span>
+    </button>
+    <button class="bnav-btn" id="bn-form" onclick="showPage('form',null,this)">
+      <div class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+      <span class="bnav-label">New deal</span>
+    </button>
+    <button class="bnav-btn" id="bn-analysis" onclick="showPage('analysis',null,this)">
+      <div class="bnav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <span class="bnav-label">Analysis</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PASTE YOUR GOOGLE APPS SCRIPT URL HERE AFTER SETUP
+// Example: 'https://script.google.com/macros/s/YOUR_ID/exec'
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi1x2TxxtOr8Jz_-6m7CywAbuso9u0QGROWdRDgPosV-QboNmE8x8ypbmfYW95cA11aA/exec';
+
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const sSty={
+  declined:{bg:'#FCEBEB',c:'#791F1F',lbl:'Declined'},
+  negotiating:{bg:'#FAEEDA',c:'#854F0B',lbl:'Negotiating'},
+  agreed:{bg:'#E6F1FB',c:'#185FA5',lbl:'Agreed'},
+  created:{bg:'#EEEDFE',c:'#3C3489',lbl:'Content created'},
+  posted:{bg:'#E1F5EE',c:'#085041',lbl:'Posted'},
+  paid:{bg:'#EAF3DE',c:'#27500A',lbl:'Paid'}
+};
+const pCls={IG:'ig',TT:'tt',YT:'yt'};
+let allDeals=[];
+let dFilter='all';
+let editingId=null;
+
+// ── API ──────────────────────────────────────────────────────
+function apiCall(params){
+  if(!SCRIPT_URL){
+    showToast('⚠️ Please add your Script URL first. See setup guide.','warn');
+    return Promise.reject('No URL');
+  }
+  const url=SCRIPT_URL+'?'+Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+  return fetch(url).then(r=>r.json());
+}
+
+function loadDeals(){
+  if(!SCRIPT_URL){ renderTable(); renderDashboardCards(); return; }
+  showToast('Loading deals…','info');
+  apiCall({action:'getDeals'}).then(res=>{
+    if(res.success){
+      allDeals=res.deals.map(d=>({
+        ...d,
+        platform: typeof d.platforms==='string'&&d.platforms ? d.platforms.split(',') : [],
+        rate: parseFloat(d.rate)||0,
+      }));
+      renderTable();
+      renderDashboardCards();
+      renderDeadlines();
+      showToast('Deals loaded ✓','ok');
+    }
+  }).catch(()=>showToast('Could not load deals','err'));
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type='ok'){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:999px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .3s;white-space:nowrap;font-family:var(--font)';
+    document.body.appendChild(t);
+  }
+  const colors={ok:'#1D9E75',err:'#A32D2D',warn:'#854F0B',info:'#185FA5'};
+  t.style.background=colors[type]||colors.ok;
+  t.style.color='#fff';
+  t.style.opacity='1';
+  t.textContent=msg;
+  clearTimeout(t._to);
+  t._to=setTimeout(()=>t.style.opacity='0',2500);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function init(){
+  renderYearSelects();
+  loadDeals();
+}
+
+function renderYearSelects(){
+  const years=[...new Set([new Date().getFullYear(), new Date().getFullYear()-1])].sort((a,b)=>b-a);
+  ['dYearSel','aYearSel'].forEach(id=>{
+    document.getElementById(id).innerHTML='<option value="all">All years</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  });
+}
+
+function refreshYearSelects(){
+  const years=[...new Set(allDeals.map(d=>d.postDate?new Date(d.postDate).getFullYear():new Date().getFullYear()))].sort((a,b)=>b-a);
+  if(!years.length) return;
+  ['dYearSel','aYearSel'].forEach(id=>{
+    const cur=document.getElementById(id).value;
+    document.getElementById(id).innerHTML='<option value="all">All years</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+    document.getElementById(id).value=cur;
+  });
+}
+
+// ── NAV ──────────────────────────────────────────────────────
+function showPage(id, topBtn, bnBtn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  const tabs=document.querySelectorAll('.nav-tab');
+  const pages=['dashboard','form','analysis'];
+  const idx=pages.indexOf(id);
+  if(idx>=0) tabs[idx].classList.add('active');
+  const bn=document.getElementById('bn-'+id);
+  if(bn) bn.classList.add('active');
+  if(bnBtn) bnBtn.classList.add('active');
+  if(id==='analysis') renderAnalysis();
+  if(id==='dashboard'){ renderTable(); renderDashboardCards(); }
+  if(id==='form' && !editingId) resetForm();
+}
+
+function goNewDeal(){ editingId=null; resetForm(); showPage('form',null,null); }
+
+// ── DASHBOARD CARDS ──────────────────────────────────────────
+function renderDashboardCards(){
+  const yr=new Date().getFullYear();
+  const thisYear=allDeals.filter(d=>d.postDate&&new Date(d.postDate).getFullYear()===yr);
+  const total=thisYear.length;
+  const revenue=thisYear.filter(d=>d.status==='paid').reduce((s,d)=>s+(parseFloat(d.rate)||0),0);
+  const unpaid=allDeals.filter(d=>d.status==='posted').reduce((s,d)=>s+(parseFloat(d.rate)||0),0);
+  const active=allDeals.filter(d=>!['paid','declined'].includes(d.status)).length;
+  document.getElementById('sc-total').textContent=total;
+  document.getElementById('sc-revenue').textContent=revenue>=1000?(revenue/1000).toFixed(0)+'K':revenue.toLocaleString();
+  document.getElementById('sc-unpaid').textContent=unpaid>=1000?(unpaid/1000).toFixed(0)+'K':(unpaid||'0');
+  document.getElementById('sc-active').textContent=active;
+  renderRecentDeals();
+  renderDeadlines();
+}
+
+function renderRecentDeals(){
+  const sorted=[...allDeals].sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,4);
+  const el=document.getElementById('recentDeals');
+  if(!sorted.length){ el.innerHTML='<div class="empty" style="padding:1rem 0">No deals yet</div>'; return; }
+  el.innerHTML=sorted.map(d=>{
+    const plats=(d.platform||[]).map(p=>`<span class="ppill ${pCls[p]||''}">${p}</span>`).join('');
+    const s=sSty[d.status]||sSty.negotiating;
+    return `<div class="dl-row">
+      <div style="flex:1"><div class="dl-name">${d.brand||'—'} ${plats}</div><div class="dl-type">${d.product||''} · ${d.dealType||''}</div></div>
+      <div style="text-align:right;flex-shrink:0;margin-right:8px"><div style="font-size:13px;font-weight:500">${d.rate?Number(d.rate).toLocaleString():'—'}</div><div class="dl-type">THB</div></div>
+      <span class="spill" style="background:${s.bg};color:${s.c};border-color:${s.c}44">${s.lbl}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── DEALS TABLE ──────────────────────────────────────────────
+function setDF(f,btn){
+  dFilter=f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderTable();
+}
+
+function renderTable(){
+  const yr=document.getElementById('dYearSel').value;
+  const ms=document.getElementById('dMonthSel');
+  ms.style.display=yr==='all'?'none':'block';
+  const mv=ms.value;
+  let f=allDeals.filter(d=>{
+    const dt=d.postDate?new Date(d.postDate):null;
+    if(yr!=='all'&&(!dt||dt.getFullYear()!=yr)) return false;
+    if(yr!=='all'&&mv!=='all'&&(!dt||dt.getMonth()!=parseInt(mv))) return false;
+    if(dFilter==='active') return !['paid','declined'].includes(d.status);
+    if(dFilter==='paid') return d.status==='paid';
+    if(dFilter==='unpaid') return d.status==='posted';
+    return true;
+  }).sort((a,b)=>new Date(b.postDate||0)-new Date(a.postDate||0));
+  const tb=document.getElementById('dealsBody');
+  if(!f.length){
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty">${SCRIPT_URL?'No deals found':'Add your Script URL to load deals'}</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=f.map(d=>{
+    const s=sSty[d.status]||sSty.negotiating;
+    const plats=(d.platform||[]).map(p=>`<span class="ppill ${pCls[p]||''}">${p}</span>`).join('');
+    const dt=d.postDate?new Date(d.postDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+    return `<tr>
+      <td style="font-weight:500">${d.brand||'—'}</td>
+      <td style="color:var(--text-secondary)">${d.product||'—'}</td>
+      <td>${plats}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${d.dealType||'—'}</td>
+      <td style="font-weight:500;font-family:var(--mono)">${d.rate?Number(d.rate).toLocaleString():'—'}</td>
+      <td style="color:var(--text-secondary);font-size:12px;font-family:var(--mono)">${dt}</td>
+      <td><span class="spill" style="background:${s.bg};color:${s.c};border-color:${s.c}44">${s.lbl}</span></td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="tbl-btn edit" onclick="editDeal('${d.id}')">Edit</button>
+          <button class="tbl-btn del" onclick="confirmDelete('${d.id}','${d.brand||'this deal'}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FORM ─────────────────────────────────────────────────────
+function resetForm(){
+  editingId=null;
+  document.getElementById('formDeleteBtn').style.display='none';
+  document.getElementById('hpill').textContent='Draft';
+  document.getElementById('hpill').style.cssText='';
+  document.getElementById('formTitle').textContent='New collaboration';
+  document.querySelector('.btn-primary').textContent='Save deal';
+  // clear all inputs
+  document.querySelectorAll('#page-form input, #page-form textarea, #page-form select').forEach(el=>{
+    if(el.type==='checkbox') el.checked=false;
+    else el.value='';
+  });
+  // clear tags
+  ['tagBox','hashBox'].forEach(id=>{
+    const box=document.getElementById(id);
+    box.querySelectorAll('.tag').forEach(t=>t.remove());
+  });
+  // reset platforms
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('on'));
+  ['ig-b','tt-b','yt-b'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  // reset ctypes
+  document.querySelectorAll('.ctype').forEach(c=>c.classList.remove('on'));
+  // reset deal type pills
+  document.querySelectorAll('#page-form .pill').forEach(p=>p.classList.remove('on'));
+  // reset status
+  document.querySelectorAll('.sstep').forEach(s=>s.classList.remove('on'));
+  document.querySelector('.sstep.ss-negotiating').classList.add('on');
+  // reset rate toggle
+  document.querySelectorAll('.btn-toggle').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.btn-toggle')[0].classList.add('on');
+  document.getElementById('rLbl').textContent='Rate';
+  // hide cond fields
+  ['cF1','cF2','cF3','cF4'].forEach(id=>document.getElementById(id).classList.remove('show'));
+}
+
+function editDeal(id){
+  const d=allDeals.find(x=>x.id===id);
+  if(!d) return;
+  editingId=id;
+  showPage('form',null,null);
+  document.getElementById('formTitle').textContent='Edit collaboration';
+  document.querySelector('.btn-primary').textContent='Update deal';
+  document.getElementById('formDeleteBtn').style.display='block';
+
+  // fill basic fields
+  const fMap={
+    'f-brand':'brand','f-product':'product','f-agency':'agency','f-contact':'contact',
+    'f-rate':'rate','f-paymentTerm':'paymentTerm','f-deliverables':'deliverables',
+    'f-gencode':'gencode','f-gencodeRate':'gencodeRate','f-commRate':'commissionRate',
+    'f-commLink':'commissionLink','f-ttOutreach':'outreachDateTT',
+    'f-territory':'territory','f-rightsNotes':'rightsNotes','f-repurchase':'repurposeChannels',
+    'f-exclPeriod':'exclusivityPeriod','f-exclCat':'competitorCategory',
+    'f-usageExpiry':'usageExpiry','f-usageNote':'usageNote',
+    'f-briefLink':'briefLink','f-briefNotes':'briefNotes',
+    'f-outreach':'outreachDate','f-draft':'draftDeadline','f-due':'dueDate',
+    'f-post':'postDate','f-payment':'paymentExpected'
+  };
+  Object.entries(fMap).forEach(([elId,key])=>{
+    const el=document.getElementById(elId);
+    if(el&&d[key]!==undefined) el.value=d[key];
+  });
+
+  // deal type pills
+  const dtArr=typeof d.dealType==='string'?d.dealType.split(','):[];
+  document.querySelectorAll('#page-form .pill').forEach(p=>{
+    p.classList.toggle('on', dtArr.includes(p.textContent.trim()));
+  });
+
+  // platforms
+  const plats=d.platform||[];
+  document.querySelectorAll('.ptab').forEach(btn=>{
+    const p=btn.textContent.trim()==='Instagram'?'IG':btn.textContent.trim()==='TikTok'?'TT':'YT';
+    if(plats.includes(p)){ btn.classList.add('on'); document.getElementById(p.toLowerCase()+'-b').classList.add('show'); }
+  });
+
+  // content types
+  const ctArr=typeof d.contentTypes==='string'&&d.contentTypes?d.contentTypes.split(','):[];
+  document.querySelectorAll('.ctype').forEach(c=>{
+    if(ctArr.includes(c.textContent.trim())) c.classList.add('on');
+  });
+
+  // tags
+  if(d.tags) d.tags.split(',').forEach(v=>{ if(v.trim()) addTagVal('tagBox','tagIn',v.trim()); });
+  if(d.hashtags) d.hashtags.split(',').forEach(v=>{ if(v.trim()) addTagVal('hashBox','hashIn',v.trim()); });
+
+  // status
+  document.querySelectorAll('.sstep').forEach(s=>s.classList.remove('on'));
+  const ss=document.querySelector('.sstep.ss-'+d.status);
+  if(ss){ ss.classList.add('on'); const st=sSty[d.status]; if(st){ const p=document.getElementById('hpill'); p.textContent=st.lbl; p.style.background=st.bg; p.style.color=st.c; p.style.borderColor=st.c+'55'; }}
+
+  // rate mode
+  document.querySelectorAll('.btn-toggle').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.btn-toggle')[d.rateMode==='self'?1:0].classList.add('on');
+  document.getElementById('rLbl').textContent=d.rateMode==='self'?'My rate':'Rate';
+}
+
+function collectDeal(){
+  const deal={};
+  deal.id=editingId||('deal_'+Date.now());
+  deal.createdAt=editingId?(allDeals.find(x=>x.id===editingId)||{}).createdAt||new Date().toISOString():new Date().toISOString();
+
+  const fMap={
+    'f-brand':'brand','f-product':'product','f-agency':'agency','f-contact':'contact',
+    'f-rate':'rate','f-paymentTerm':'paymentTerm','f-deliverables':'deliverables',
+    'f-gencode':'gencode','f-gencodeRate':'gencodeRate','f-commRate':'commissionRate',
+    'f-commLink':'commissionLink','f-ttOutreach':'outreachDateTT',
+    'f-territory':'territory','f-rightsNotes':'rightsNotes','f-repurchase':'repurposeChannels',
+    'f-exclPeriod':'exclusivityPeriod','f-exclCat':'competitorCategory',
+    'f-usageExpiry':'usageExpiry','f-usageNote':'usageNote',
+    'f-briefLink':'briefLink','f-briefNotes':'briefNotes',
+    'f-outreach':'outreachDate','f-draft':'draftDeadline','f-due':'dueDate',
+    'f-post':'postDate','f-payment':'paymentExpected'
+  };
+  Object.entries(fMap).forEach(([elId,key])=>{
+    const el=document.getElementById(elId);
+    if(el) deal[key]=el.value;
+  });
+
+  // deal type
+  deal.dealType=[...document.querySelectorAll('#page-form .pill.on')].map(p=>p.textContent.trim()).join(',');
+
+  // platforms
+  const plats=[];
+  document.querySelectorAll('.ptab.on').forEach(btn=>{
+    const p=btn.textContent.trim()==='Instagram'?'IG':btn.textContent.trim()==='TikTok'?'TT':'YT';
+    plats.push(p);
+  });
+  deal.platforms=plats.join(',');
+  deal.platform=plats;
+
+  // content types
+  deal.contentTypes=[...document.querySelectorAll('.ctype.on')].map(c=>c.textContent.trim()).join(',');
+
+  // tags
+  deal.tags=[...document.getElementById('tagBox').querySelectorAll('.tag')].map(t=>t.textContent.replace('✕','').trim()).join(',');
+  deal.hashtags=[...document.getElementById('hashBox').querySelectorAll('.tag')].map(t=>t.textContent.replace('✕','').trim()).join(',');
+
+  // rights
+  const rightsMap=[
+    'Commercial use allowed','Repurpose rights','Paid ads / whitelisting',
+    'Content may be modified','Third party usage','Credit required when reposting',
+    'Exclusivity required','Usage rights have expiry'
+  ];
+  const checkedRights=[];
+  document.querySelectorAll('.right-item input[type=checkbox]').forEach((cb,i)=>{ if(cb.checked) checkedRights.push(rightsMap[i]); });
+  deal.rights=checkedRights.join(',');
+
+  // status
+  const ss=document.querySelector('.sstep.on');
+  deal.status=ss?ss.className.replace(/.*ss-(\w+).*/,'$1'):'negotiating';
+
+  // rate mode
+  deal.rateMode=document.querySelectorAll('.btn-toggle')[1].classList.contains('on')?'self':'fixed';
+
+  return deal;
+}
+
+function saveDeal(){
+  const btn=document.querySelector('.btn-primary');
+  const deal=collectDeal();
+  if(!deal.brand){ showToast('Please enter a brand name','warn'); return; }
+
+  btn.textContent='Saving…';btn.disabled=true;
+
+  if(!SCRIPT_URL){
+    // local only — save to allDeals array (session only)
+    if(editingId){
+      const idx=allDeals.findIndex(x=>x.id===editingId);
+      if(idx>=0) allDeals[idx]=deal;
+    } else {
+      allDeals.unshift(deal);
+    }
+    btn.textContent=editingId?'Updated ✓':'Saved ✓';
+    btn.style.background='#1D9E75';
+    showToast(editingId?'Deal updated!':'Deal saved!','ok');
+    setTimeout(()=>{ btn.textContent=editingId?'Update deal':'Save deal'; btn.style.background=''; btn.disabled=false; refreshYearSelects(); showPage('dashboard',null,null); },1500);
+    return;
+  }
+
+  const action=editingId?'updateDeal':'saveDeal';
+  apiCall({action, deal:JSON.stringify(deal)}).then(res=>{
+    if(res.success){
+      if(editingId){
+        const idx=allDeals.findIndex(x=>x.id===editingId);
+        if(idx>=0) allDeals[idx]=deal;
+      } else {
+        deal.id=res.id||deal.id;
+        allDeals.unshift(deal);
+      }
+      btn.textContent=editingId?'Updated ✓':'Saved ✓';
+      btn.style.background='#1D9E75';
+      showToast(editingId?'Deal updated!':'Deal saved! ✓','ok');
+      setTimeout(()=>{ btn.textContent=editingId?'Update deal':'Save deal'; btn.style.background=''; btn.disabled=false; refreshYearSelects(); showPage('dashboard',null,null); },1500);
+    } else {
+      btn.textContent='Error — try again'; btn.disabled=false;
+      showToast('Save failed: '+res.error,'err');
+    }
+  }).catch(()=>{ btn.textContent='Error — try again'; btn.disabled=false; showToast('Network error','err'); });
+}
+
+// ── ANALYSIS ─────────────────────────────────────────────────
+function renderAnalysis(){
+  const yr=document.getElementById('aYearSel').value;
+  const ms=document.getElementById('aMonthSel');
+  ms.style.display=yr==='all'?'none':'block';
+  const mv=ms.value;
+  const single=yr!=='all'&&mv!=='all';
+  document.getElementById('revCard').style.display=single?'none':'block';
+  document.getElementById('dealCard').style.display=single?'none':'block';
+
+  // build revenue/deals from real data
+  const targetYear=yr==='all'?null:parseInt(yr);
+  const monthlyRev=new Array(12).fill(0);
+  const monthlyDeals=new Array(12).fill(0);
+
+  allDeals.forEach(d=>{
+    if(!d.postDate) return;
+    const dt=new Date(d.postDate);
+    if(targetYear&&dt.getFullYear()!==targetYear) return;
+    const m=dt.getMonth();
+    if(d.status==='paid') monthlyRev[m]+=(parseFloat(d.rate)||0);
+    monthlyDeals[m]++;
+  });
+
+  const rev=monthlyRev, dl=monthlyDeals;
+  let period=yr==='all'?'All years':yr;
+
+  if(single){
+    const m=parseInt(mv);
+    period=MONTHS[m]+' '+yr;
+    renderMetrics(rev[m],dl[m],period);
+  } else {
+    const tR=rev.reduce((a,b)=>a+b,0),tD=dl.reduce((a,b)=>a+b,0);
+    renderMetrics(tR,tD,period);
+    document.getElementById('revSub').textContent=period+' · THB';
+    document.getElementById('dealSub').textContent=period+' · deals';
+    renderBar('revChart',rev,'#5DCAA5',v=>v>=1000?(v/1000).toFixed(0)+'K':v||'');
+    renderBar('dealChart',dl,'#AFA9EC',v=>v||'');
+  }
+  const hi=single?parseInt(mv):-1;
+  document.getElementById('mGrid').innerHTML=rev.map((r,i)=>`
+    <div class="mcell${i===hi?' hi':''}"><div class="mcell-m">${MONTHS[i]}</div><div class="mcell-v">${r>=1000?(r/1000).toFixed(0)+'K':(r||'0')}</div><div class="mcell-d">${dl[i]}</div></div>`).join('');
+}
+
+function renderMetrics(tR,tD,period){
+  const avg=tD?Math.round(tR/tD):0;
+  // best month
+  const yr=document.getElementById('aYearSel').value;
+  const monthlyRev=new Array(12).fill(0);
+  allDeals.forEach(d=>{
+    if(!d.postDate||d.status!=='paid') return;
+    const dt=new Date(d.postDate);
+    if(yr!=='all'&&dt.getFullYear()!==parseInt(yr)) return;
+    monthlyRev[dt.getMonth()]+=(parseFloat(d.rate)||0);
+  });
+  const bi=monthlyRev.indexOf(Math.max(...monthlyRev));
+  document.getElementById('aMetrics').innerHTML=`
+    <div class="scard"><div class="scard-lbl">Total revenue</div><div class="scard-val">${tR>=1000?(tR/1000).toFixed(0)+'K':tR.toLocaleString()}</div><div class="scard-sub">THB ${period}</div></div>
+    <div class="scard"><div class="scard-lbl">Total deals</div><div class="scard-val">${tD}</div><div class="scard-sub">collaborations</div></div>
+    <div class="scard"><div class="scard-lbl">Avg per deal</div><div class="scard-val">${avg>=1000?(avg/1000).toFixed(1)+'K':avg||'—'}</div><div class="scard-sub">THB average</div></div>
+    <div class="scard"><div class="scard-lbl">Best month</div><div class="scard-val">${Math.max(...monthlyRev)>0?MONTHS[bi]:'—'}</div><div class="scard-sub">top performer</div></div>
+  `;
+}
+
+function renderBar(id,vals,color,fmt){
+  const max=Math.max(...vals)||1;
+  document.getElementById(id).innerHTML='<div class="chart-axis"></div>'+vals.map((v,i)=>`
+    <div class="bar-wrap"><span class="bar-val">${fmt(v)}</span><div class="bar" style="height:${Math.round((v/max)*118)}px;background:${color}"></div><span class="bar-lbl">${MONTHS[i]}</span></div>`).join('');
+}
+
+// ── FORM HELPERS ─────────────────────────────────────────────
+function setRate(m,btn){document.querySelectorAll('.btn-toggle').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.getElementById('rLbl').textContent=m==='fixed'?'Rate':'My rate';}
+function toggleP(p,btn){btn.classList.toggle('on');document.getElementById(p+'-b').classList.toggle('show',btn.classList.contains('on'));}
+function addTagVal(bId,iId,val){
+  const t=document.createElement('div');t.className='tag';
+  t.innerHTML=val+'<span class="tag-x" onclick="this.parentElement.remove()">✕</span>';
+  const box=document.getElementById(bId);
+  box.insertBefore(t,document.getElementById(iId));
+}
+function addTag(e,bId,iId,px){
+  if(e.key!=='Enter'&&e.key!==',') return;
+  e.preventDefault();
+  const inp=document.getElementById(iId);
+  let v=inp.value.trim().replace(/,$/,'');
+  if(!v) return;
+  if(!v.startsWith(px)) v=px+v;
+  addTagVal(bId,iId,v);
+  inp.value='';
+}
+function showCond(id,show){document.getElementById(id).classList.toggle('show',show);}
+function setStatus(el,bg,c,lbl){
+  document.querySelectorAll('.sstep').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+  const p=document.getElementById('hpill');
+  p.textContent=lbl;p.style.background=bg;p.style.color=c;p.style.borderColor=c+'55';
+}
+
+
+// ── DELETE FROM FORM ─────────────────────────────────────────
+function deleteFromForm(){
+  if(!editingId) return;
+  const d = allDeals.find(x=>x.id===editingId);
+  confirmDelete(editingId, d?d.brand:'this deal');
+}
+
+// ── DELETE ───────────────────────────────────────────────────
+let pendingDeleteId = null;
+
+function confirmDelete(id, brandName){
+  pendingDeleteId = id;
+  document.getElementById('deleteModalMsg').textContent = 'Are you sure you want to delete the deal with "' + brandName + '"? This cannot be undone.';
+  document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal(){
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').classList.remove('show');
+}
+
+function confirmDeleteAction(){
+  if(!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeDeleteModal();
+
+  // Remove from local array immediately
+  allDeals = allDeals.filter(d => d.id !== id);
+  renderTable();
+  renderDashboardCards();
+  renderDeadlines();
+  showToast('Deal deleted','ok');
+  // if we were on the form, go back to dashboard
+  if(document.getElementById('page-form').classList.contains('active')){
+    showPage('dashboard',null,null);
+  }
+
+  // Also delete from Google Sheet if connected
+  if(SCRIPT_URL){
+    apiCall({action:'deleteDeal', id}).catch(()=>{
+      showToast('Deleted locally but could not sync to Sheet','warn');
+    });
+  }
+}
+
+// ── DEADLINES ────────────────────────────────────────────────
+function renderDeadlines(){
+  const el = document.getElementById('deadlinesList');
+  if(!el) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = [];
+  allDeals.forEach(d => {
+    const checks = [
+      {label:'Draft deadline', date:d.draftDeadline},
+      {label:'Post date', date:d.postDate},
+      {label:'Due date', date:d.dueDate},
+      {label:'Payment expected', date:d.paymentExpected},
+    ];
+    checks.forEach(({label,date}) => {
+      if(!date) return;
+      const dt = new Date(date); dt.setHours(0,0,0,0);
+      const diff = Math.round((dt-today)/(1000*60*60*24));
+      if(diff >= 0 && diff <= 30) upcoming.push({brand:d.brand, label, dt, diff});
+    });
+  });
+  upcoming.sort((a,b)=>a.dt-b.dt);
+  if(!upcoming.length){
+    el.innerHTML='<div class="empty" style="padding:1rem 0">No upcoming deadlines</div>';
+    return;
+  }
+  el.innerHTML = upcoming.slice(0,5).map(u=>{
+    const dateStr = u.dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const cls = u.diff===0?'urgent':u.diff<=7?'soon':'ok';
+    const lbl = u.diff===0?'Today':u.diff+' days';
+    return `<div class="dl-row">
+      <div class="dl-date">${dateStr}</div>
+      <div style="flex:1"><div class="dl-name">${u.brand||'—'}</div><div class="dl-type">${u.label}</div></div>
+      <span class="badge ${cls}">${lbl}</span>
+    </div>`;
+  }).join('');
+}
+
+init();
+</script>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>Delete deal?</h3>
+    <p id="deleteModalMsg">Are you sure you want to delete this deal? This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="modal-btn confirm-del" onclick="confirmDeleteAction()">Delete</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
